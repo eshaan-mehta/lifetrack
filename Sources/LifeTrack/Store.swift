@@ -14,7 +14,7 @@ final class Store {
 
     init() {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        url = dir.appendingPathComponent("everything.sqlite")
+        url = dir.appendingPathComponent("lifetrack.sqlite")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         open()
     }

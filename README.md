@@ -1,5 +1,10 @@
-# everything-app
-The app so I can track everything I would ever want to track.
+# LifeTrack
+
+Keeping your life on track.
+
+A personal iPhone app for tracking finances, habits, nutrition, and whatever
+else comes up. Built with SwiftUI and SwiftPM, stored in SQLite, installed
+through SideStore.
 
 ## Building
 
@@ -7,7 +12,7 @@ Plain SwiftPM plus a Makefile, no Xcode project. Xcode.app still has to be
 installed for the iOS SDK; the Makefile points at it directly.
 
 ```
-make ipa   # unsigned build/Everything.ipa for the phone
+make ipa   # unsigned build/LifeTrack.ipa for the phone
 make sim   # build, install and launch in the iOS Simulator
 ```
 

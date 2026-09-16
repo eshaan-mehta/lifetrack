@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Everything",
+    name: "LifeTrack",
     platforms: [.iOS("26.0")],
     targets: [
         .executableTarget(
-            name: "Everything",
-            path: "Sources/Everything",
+            name: "LifeTrack",
+            path: "Sources/LifeTrack",
             linkerSettings: [
                 .linkedFramework("SwiftUI"),
                 .linkedLibrary("sqlite3"),

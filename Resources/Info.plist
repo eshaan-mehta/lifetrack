@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>Everything</string>
+	<string>LifeTrack</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.eshaan.everything</string>
+	<string>com.eshaan.lifetrack</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Everything</string>
+	<string>LifeTrack</string>
 	<key>CFBundleDisplayName</key>
-	<string>Everything</string>
+	<string>LifeTrack</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

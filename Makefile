@@ -1,5 +1,5 @@
-APP       := Everything
-BUNDLE_ID := com.eshaan.everything
+APP       := LifeTrack
+BUNDLE_ID := com.eshaan.lifetrack
 IOS_MIN   := 26.0
 SIM       := iPhone 18 Pro
 

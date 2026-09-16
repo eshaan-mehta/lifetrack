@@ -6,11 +6,11 @@
   "website": "https://github.com/eshaan-mehta/everything-app",
   "apps": [
     {
-      "name": "Everything",
-      "bundleIdentifier": "com.eshaan.everything",
+      "name": "LifeTrack",
+      "bundleIdentifier": "com.eshaan.lifetrack",
       "developerName": "Eshaan",
-      "subtitle": "Track everything",
-      "localizedDescription": "The app so I can track everything I would ever want to track.",
+      "subtitle": "Keeping your life on track",
+      "localizedDescription": "Keeping your life on track",
       "iconURL": "https://raw.githubusercontent.com/eshaan-mehta/everything-app/main/Resources/AppIcon.png",
       "tintColor": "#3B82F6",
       "category": "lifestyle",
@@ -18,24 +18,8 @@
         "entitlements": [],
         "privacy": {}
       },
-      "versions": [
-        {
-          "version": "0.1.2",
-          "buildVersion": "2",
-          "date": "2026-09-16T21:24:41Z",
-          "downloadURL": "https://github.com/eshaan-mehta/everything-app/releases/download/v0.1.2/Everything.ipa",
-          "size": 52526,
-          "minOSVersion": "26.0"
-        },
-        {
-          "version": "0.1.1",
-          "buildVersion": "1",
-          "date": "2026-09-16T01:47:40Z",
-          "downloadURL": "https://github.com/eshaan-mehta/everything-app/releases/download/v0.1.1/Everything.ipa",
-          "size": 28078,
-          "minOSVersion": "26.0"
-        }
-      ]
+      "versions": []
     }
-  ]
+  ],
+  "description": "Keeping your life on track"
 }

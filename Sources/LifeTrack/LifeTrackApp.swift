@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct EverythingApp: App {
+struct LifeTrackApp: App {
     @State private var store = Store()
 
     var body: some Scene {

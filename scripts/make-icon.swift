@@ -20,7 +20,7 @@ ctx.drawLinearGradient(gradient, start: CGPoint(x: 0, y: side), end: CGPoint(x: 
 
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
-let text = "E" as NSString
+let text = "L" as NSString
 let attrs: [NSAttributedString.Key: Any] = [
     .font: NSFont.systemFont(ofSize: 700, weight: .heavy),
     .foregroundColor: NSColor.white,

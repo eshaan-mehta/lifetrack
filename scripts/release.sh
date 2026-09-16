@@ -13,7 +13,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 REPO="eshaan-mehta/everything-app"
-APP="Everything"
+APP="LifeTrack"
 BRANCH="main"
 DRY_RUN="${DRY_RUN:-0}"
 
