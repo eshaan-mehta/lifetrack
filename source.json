@@ -1,0 +1,33 @@
+{
+  "name": "Eshaan's Apps",
+  "identifier": "com.eshaan.source",
+  "subtitle": "Personal builds",
+  "iconURL": "https://raw.githubusercontent.com/eshaan-mehta/everything-app/main/Resources/AppIcon.png",
+  "website": "https://github.com/eshaan-mehta/everything-app",
+  "apps": [
+    {
+      "name": "Everything",
+      "bundleIdentifier": "com.eshaan.everything",
+      "developerName": "Eshaan",
+      "subtitle": "Track everything",
+      "localizedDescription": "The app so I can track everything I would ever want to track.",
+      "iconURL": "https://raw.githubusercontent.com/eshaan-mehta/everything-app/main/Resources/AppIcon.png",
+      "tintColor": "#3B82F6",
+      "category": "lifestyle",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      },
+      "versions": [
+        {
+          "version": "0.1.1",
+          "buildVersion": "1",
+          "date": "2026-09-16T01:47:40Z",
+          "downloadURL": "https://github.com/eshaan-mehta/everything-app/releases/download/v0.1.1/Everything.ipa",
+          "size": 28078,
+          "minOSVersion": "26.0"
+        }
+      ]
+    }
+  ]
+}
