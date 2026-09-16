@@ -20,6 +20,14 @@
       },
       "versions": [
         {
+          "version": "0.1.2",
+          "buildVersion": "2",
+          "date": "2026-09-16T21:24:41Z",
+          "downloadURL": "https://github.com/eshaan-mehta/everything-app/releases/download/v0.1.2/Everything.ipa",
+          "size": 52526,
+          "minOSVersion": "26.0"
+        },
+        {
           "version": "0.1.1",
           "buildVersion": "1",
           "date": "2026-09-16T01:47:40Z",
