@@ -77,6 +77,11 @@ struct VoiceCaptureView: View {
         switch recognizer.state {
         case .idle, .requestingPermission:
             Text("Starting…").font(.subheadline).foregroundStyle(.secondary)
+        case .preparing:
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.mini)
+                Text("Preparing").font(.subheadline).foregroundStyle(.secondary)
+            }
         case .listening:
             HStack(spacing: 6) {
                 Circle().fill(.red).frame(width: 8, height: 8)
@@ -94,6 +99,7 @@ struct VoiceCaptureView: View {
     private var hint: String {
         switch recognizer.state {
         case .listening: return "Tap to pause"
+        case .preparing(let message): return message
         case .paused: return "Tap to keep going"
         case .failed(let message):
             let sentence = message.hasSuffix(".") ? message : message + "."
