@@ -46,14 +46,14 @@ struct CameraView: View {
 
     private var controls: some View {
         HStack {
-            Button(action: onBack) { glyph("chevron.left") }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Back to voice")
+            RoundGlyphButton(systemImage: "chevron.left", label: "Back to voice", onImagery: true, action: onBack)
             Spacer()
             Button(action: shoot) {
                 ZStack {
-                    Circle().stroke(.white, lineWidth: 4).frame(width: 76, height: 76)
-                    Circle().fill(.white).frame(width: 62, height: 62)
+                    Circle().stroke(.white, lineWidth: 4)
+                        .frame(width: DrawerControls.shutterSize, height: DrawerControls.shutterSize)
+                    Circle().fill(.white)
+                        .frame(width: DrawerControls.shutterSize - 14, height: DrawerControls.shutterSize - 14)
                 }
             }
             .buttonStyle(.plain)
@@ -61,20 +61,15 @@ struct CameraView: View {
             .opacity(camera.status == .running ? 1 : 0.35)
             .accessibilityLabel("Take photo")
             Spacer()
-            PhotosPicker(selection: $librarySelection, matching: .images) { glyph("photo.on.rectangle") }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Choose from library")
+            PhotosPicker(selection: $librarySelection, matching: .images) {
+                RoundGlyph(systemImage: "photo.on.rectangle", onImagery: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Choose from library")
         }
-        .padding(.horizontal, 28)
-        .padding(.bottom, 32)
-    }
-
-    private func glyph(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 20, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: 54, height: 54)
-            .background(.black.opacity(0.45), in: Circle())
+        .frame(height: DrawerControls.rowHeight)
+        .padding(.horizontal, DrawerControls.horizontalPadding)
+        .padding(.bottom, DrawerControls.bottomPadding)
     }
 
     private func shoot() {

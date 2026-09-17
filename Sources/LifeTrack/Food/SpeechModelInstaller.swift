@@ -65,12 +65,11 @@ final class SpeechModelInstaller {
 
     private func install() async throws -> Locale {
         do {
-            guard SpeechTranscriber.isAvailable else { throw SpeechModelError.unavailable }
             guard let locale = await Self.pickLocale() else { throw SpeechModelError.unsupportedLanguage }
             self.locale = locale
 
             // Any transcriber for the locale works for asking about assets.
-            let probe = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
+            let probe = DictationTranscriber(locale: locale, preset: .progressiveShortDictation)
             switch await AssetInventory.status(forModules: [probe]) {
             case .installed:
                 break
@@ -105,9 +104,9 @@ final class SpeechModelInstaller {
     }
 
     private static func pickLocale() async -> Locale? {
-        if let match = await SpeechTranscriber.supportedLocale(equivalentTo: .current) {
+        if let match = await DictationTranscriber.supportedLocale(equivalentTo: .current) {
             return match
         }
-        return await SpeechTranscriber.supportedLocale(equivalentTo: Locale(identifier: "en_US"))
+        return await DictationTranscriber.supportedLocale(equivalentTo: Locale(identifier: "en_US"))
     }
 }

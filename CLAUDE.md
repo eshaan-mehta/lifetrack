@@ -17,6 +17,17 @@ Clean and minimalistic, in black and white.
   drawer over the current screen, not on a new screen.
 - System fonts and SF Symbols. No gradients, shadows, illustrations, or decoration.
 - A flow should finish in a couple of taps. If a screen needs explaining, simplify it.
+- Round glyph buttons (`RoundGlyphButton`): 54pt circle with a 20pt semibold SF Symbol.
+  The shape and size are the rule; the fill follows context. On the drawer it is a light
+  gray that blends with the sheet, with a black glyph. The primary action (send) is a
+  solid fill. Over the camera image it is a translucent dark disc with a white glyph so
+  it stays legible. Camera controls and drawer actions (switch to camera, keep talking,
+  send) all use it. They sit in a bottom row 28pt from the sides and 32pt above the
+  sheet's bottom edge, at a fixed row height, and keep the same slots in every drawer
+  state: the switch or library button bottom right, back or keep-talking bottom left.
+  No text labels on these buttons.
+- Transcribed text stays inline where it appeared while listening and simply becomes
+  editable. No boxes or fields drawn around text.
 
 When adding or changing UI, follow this even where existing screens don't yet.
 

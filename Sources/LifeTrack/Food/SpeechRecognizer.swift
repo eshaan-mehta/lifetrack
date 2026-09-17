@@ -3,8 +3,10 @@ import Foundation
 import Observation
 import Speech
 
-/// Live on-device speech-to-text using iOS 26's SpeechAnalyzer and SpeechTranscriber.
+/// Live on-device speech-to-text using iOS 26's SpeechAnalyzer with the DictationTranscriber
+/// module, which is tuned for short spoken phrases and streams words with low latency.
 /// Partial ("volatile") text shows as you speak and is replaced by finalized text.
+/// Stops on its own after a couple of seconds of silence once something has been said.
 /// Can be paused and resumed; text from earlier runs is kept and new speech is appended.
 @MainActor
 @Observable
@@ -24,19 +26,33 @@ final class SpeechRecognizer {
 
     private(set) var state: State = .idle
     private(set) var transcript = ""
-    /// Smoothed microphone level, 0 to 1, for the pulse animation.
+    /// Smoothed microphone level, 0 to 1, for the waveform.
     private(set) var level: Float = 0
 
+    /// Quiet time, after something has been said, before listening ends on its own.
+    var silenceTimeout: TimeInterval = 2.0
+
     var isListening: Bool { state == .listening }
+
+    /// True once the transcript holds an actual word, not just punctuation the model
+    /// sometimes emits for background noise.
+    var hasSpeech: Bool {
+        transcript.contains { $0.isLetter || $0.isNumber }
+    }
 
     private struct Run {
         let analyzer: SpeechAnalyzer
         let input: AsyncStream<AnalyzerInput>.Continuation
     }
 
+    /// Raw level above which a buffer counts as speech for silence detection.
+    private static let speechLevel: Float = 0.3
+
     @ObservationIgnored private let engine = AVAudioEngine()
     @ObservationIgnored private var run: Run?
     @ObservationIgnored private var resultsTask: Task<Void, Never>?
+    @ObservationIgnored private var silenceTask: Task<Void, Never>?
+    @ObservationIgnored private var lastActivity = Date()
     /// Text locked in from previous runs.
     @ObservationIgnored private var committed = ""
     /// Finalized text from the current run, and the current best guess for what follows it.
@@ -67,12 +83,7 @@ final class SpeechRecognizer {
             return
         }
 
-        let transcriber = SpeechTranscriber(
-            locale: locale,
-            transcriptionOptions: [],
-            reportingOptions: [.volatileResults],
-            attributeOptions: []
-        )
+        let transcriber = DictationTranscriber(locale: locale, preset: .progressiveShortDictation)
 
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
             state = .failed("No compatible audio format for transcription.")
@@ -100,6 +111,7 @@ final class SpeechRecognizer {
             try startEngine(feeding: continuation, format: format)
             run = Run(analyzer: analyzer, input: continuation)
             state = .listening
+            watchForSilence()
         } catch {
             continuation.finish()
             await analyzer.cancelAndFinishNow()
@@ -108,18 +120,54 @@ final class SpeechRecognizer {
         }
     }
 
-    /// Pause. Keeps the transcript so listening can resume and append.
+    /// Stop listening. Keeps the transcript so listening can resume and append.
     func stop() {
         guard let run else { return }
         self.run = nil
         userStopped = true
+        silenceTask?.cancel()
+        silenceTask = nil
         stopEngine()
         run.input.finish()
         Task { try? await run.analyzer.finalizeAndFinishThroughEndOfInput() }
         if state == .listening { state = .paused }
     }
 
-    // MARK: Setup
+    /// Replace the text, e.g. after the user edited it, so further speech appends to the edit.
+    /// Only while not listening.
+    func replaceTranscript(_ text: String) {
+        guard run == nil else { return }
+        committed = text
+        finalized = ""
+        volatile = ""
+        transcript = text
+    }
+
+    /// Debug only: pretend a run just ended with this text.
+    func seed(transcript text: String) {
+        replaceTranscript(text)
+        state = .paused
+    }
+
+    // MARK: Silence detection
+
+    private func watchForSilence() {
+        lastActivity = Date()
+        silenceTask?.cancel()
+        silenceTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(200))
+                guard let self, self.isListening else { return }
+                if self.hasSpeech,
+                   Date().timeIntervalSince(self.lastActivity) >= self.silenceTimeout {
+                    self.stop()
+                    return
+                }
+            }
+        }
+    }
+
+    // MARK: Audio engine
 
     private func startEngine(feeding continuation: AsyncStream<AnalyzerInput>.Continuation,
                              format: AVAudioFormat) throws {
@@ -158,7 +206,7 @@ final class SpeechRecognizer {
 
     // MARK: Results
 
-    private func handle(_ result: SpeechTranscriber.Result) {
+    private func handle(_ result: DictationTranscriber.Result) {
         let text = String(result.text.characters)
         if result.isFinal {
             finalized = Self.join(finalized, text)
@@ -166,18 +214,23 @@ final class SpeechRecognizer {
         } else {
             volatile = text
         }
-        transcript = Self.join(Self.join(committed, finalized), volatile)
+        let updated = Self.join(Self.join(committed, finalized), volatile)
+        if updated != transcript {
+            transcript = updated
+            lastActivity = Date()
+        }
     }
 
     private func runFailed(_ error: Error) {
         guard !userStopped else { return }
         run?.input.finish()
         run = nil
+        silenceTask?.cancel()
         stopEngine()
         let text = error.localizedDescription
-        state = transcript.isEmpty
-            ? .failed(text.isEmpty ? "Listening stopped unexpectedly." : text)
-            : .paused
+        state = hasSpeech
+            ? .paused
+            : .failed(text.isEmpty ? "Listening stopped unexpectedly." : text)
     }
 
     private func commitRun() {
@@ -190,6 +243,9 @@ final class SpeechRecognizer {
 
     private func update(level new: Float) {
         level = level * 0.6 + new * 0.4
+        if new > Self.speechLevel {
+            lastActivity = Date()
+        }
     }
 
     private static func join(_ a: String, _ b: String) -> String {

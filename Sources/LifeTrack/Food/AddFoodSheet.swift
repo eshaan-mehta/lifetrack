@@ -50,7 +50,9 @@ struct AddFoodSheet: View {
                 )
             }
         }
-        .presentationDetents([Self.voiceDetent, Self.cameraDetent], selection: $detent)
+        // A single detent at a time: the drawer can be swiped away but never resized by hand.
+        // Switching modes swaps the detent, and the sheet animates to the new height.
+        .presentationDetents([detent], selection: $detent)
         .presentationDragIndicator(.visible)
         .tint(.primary)
     }
