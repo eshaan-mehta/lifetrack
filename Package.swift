@@ -10,6 +10,8 @@ let package = Package(
             path: "Sources/LifeTrack",
             linkerSettings: [
                 .linkedFramework("SwiftUI"),
+                .linkedFramework("Speech"),
+                .linkedFramework("AVFoundation"),
                 .linkedLibrary("sqlite3"),
             ]
         ),

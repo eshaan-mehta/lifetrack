@@ -1,18 +1,24 @@
 import SwiftUI
 
+enum AppTab: Hashable {
+    case money, habits, food, status
+}
+
 struct ContentView: View {
+    @State private var tab: AppTab = DebugFlags.startTab == "food" ? .food : .money
+
     var body: some View {
-        TabView {
-            Tab("Money", systemImage: "dollarsign.circle") {
+        TabView(selection: $tab) {
+            Tab("Money", systemImage: "dollarsign.circle", value: .money) {
                 Placeholder(title: "Money", detail: "Expenses and finances will live here.")
             }
-            Tab("Habits", systemImage: "checkmark.circle") {
+            Tab("Habits", systemImage: "checkmark.circle", value: .habits) {
                 Placeholder(title: "Habits", detail: "Daily habits will live here.")
             }
-            Tab("Food", systemImage: "fork.knife") {
-                Placeholder(title: "Food", detail: "Nutrition will live here.")
+            Tab("Food", systemImage: "fork.knife", value: .food) {
+                FoodView()
             }
-            Tab("Status", systemImage: "info.circle") {
+            Tab("Status", systemImage: "info.circle", value: .status) {
                 StatusView()
             }
         }

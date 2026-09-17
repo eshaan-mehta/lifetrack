@@ -4,36 +4,10 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
-	<key>CFBundleExecutable</key>
-	<string>LifeTrack</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.eshaan.lifetrack</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>LifeTrack</string>
 	<key>CFBundleDisplayName</key>
 	<string>LifeTrack</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>0.1</string>
-	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>MinimumOSVersion</key>
-	<string>26.0</string>
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>1</integer>
-	</array>
-	<key>UILaunchScreen</key>
-	<dict/>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
+	<key>CFBundleExecutable</key>
+	<string>LifeTrack</string>
 	<key>CFBundleIcons</key>
 	<dict>
 		<key>CFBundlePrimaryIcon</key>
@@ -46,5 +20,37 @@
 			<false/>
 		</dict>
 	</dict>
+	<key>CFBundleIdentifier</key>
+	<string>com.eshaan.lifetrack</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>LifeTrack</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>MinimumOSVersion</key>
+	<string>26.0</string>
+	<key>NSCameraUsageDescription</key>
+	<string>LifeTrack photographs your food so you can log it.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LifeTrack listens while you describe what you ate.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>LifeTrack turns your description of a meal into text.</string>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
 </dict>
 </plist>

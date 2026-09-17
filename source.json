@@ -16,7 +16,11 @@
       "category": "lifestyle",
       "appPermissions": {
         "entitlements": [],
-        "privacy": {}
+        "privacy": {
+          "NSMicrophoneUsageDescription": "LifeTrack listens while you describe what you ate.",
+          "NSSpeechRecognitionUsageDescription": "LifeTrack turns your description of a meal into text.",
+          "NSCameraUsageDescription": "LifeTrack photographs your food so you can log it."
+        }
       },
       "versions": [
         {
