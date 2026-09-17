@@ -24,6 +24,14 @@
       },
       "versions": [
         {
+          "version": "0.1.6",
+          "buildVersion": "6",
+          "date": "2026-09-17T02:11:18Z",
+          "downloadURL": "https://github.com/eshaan-mehta/everything-app/releases/download/v0.1.6/LifeTrack.ipa",
+          "size": 191014,
+          "minOSVersion": "26.0"
+        },
+        {
           "version": "0.1.4",
           "buildVersion": "4",
           "date": "2026-09-16T23:20:02Z",
