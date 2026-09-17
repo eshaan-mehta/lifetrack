@@ -7,6 +7,7 @@ struct VoiceCaptureView: View {
     let onCancel: () -> Void
 
     @State private var recognizer = SpeechRecognizer()
+    private var installer: SpeechModelInstaller { .shared }
 
     private var transcript: String {
         recognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -99,7 +100,11 @@ struct VoiceCaptureView: View {
     private var hint: String {
         switch recognizer.state {
         case .listening: return "Tap to pause"
-        case .preparing(let message): return message
+        case .preparing(let message):
+            if installer.status == .downloading {
+                return message + " " + installer.progress.formatted(.percent.precision(.fractionLength(0)))
+            }
+            return message
         case .paused: return "Tap to keep going"
         case .failed(let message):
             let sentence = message.hasSuffix(".") ? message : message + "."

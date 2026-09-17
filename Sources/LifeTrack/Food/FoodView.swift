@@ -12,18 +12,18 @@ struct FoodView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 28) {
+                VStack(spacing: 16) {
+                    ScreenHeader(title: "Food")
                     CalorieRing(consumed: log.caloriesToday, goal: goal)
                         .frame(maxWidth: 300)
                         .frame(height: 300)
-                        .padding(.top, 4)
                     TodayList(entries: log.todayEntries)
+                        .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
-            .navigationTitle("Food")
-            // Inset rather than overlay so the list can always scroll clear of the button.
-            .safeAreaInset(edge: .bottom) { addButton }
+            .toolbar(.hidden, for: .navigationBar)
+            // Inset rather than overlay so the list always scrolls clear of the button.
+            .safeAreaInset(edge: .bottom, spacing: 0) { addBar }
             .sheet(isPresented: $showAdd, onDismiss: presentCameraIfRequested) {
                 AddFoodSheet(
                     initialMode: initialMode,
@@ -42,8 +42,22 @@ struct FoodView: View {
         .onAppear(perform: applyDebugFlags)
     }
 
-    /// Sits in the bottom safe-area inset. The fade behind it keeps the last row legible
-    /// when the list runs underneath.
+    /// Bottom band: content fades out over the top strip, then the button sits on solid
+    /// background so nothing shows behind it.
+    private var addBar: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [Color(.systemBackground).opacity(0), Color(.systemBackground)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 36)
+                .allowsHitTesting(false)
+            addButton
+                .padding(.top, 4)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemBackground).ignoresSafeArea(edges: .bottom))
+        }
+    }
+
     private var addButton: some View {
         Button {
             initialMode = .menu
@@ -56,14 +70,6 @@ struct FoodView: View {
         .buttonStyle(.glassProminent)
         .buttonBorderShape(.circle)
         .tint(.green)
-        .padding(.top, 24)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
-        .background {
-            LinearGradient(colors: [Color(.systemBackground).opacity(0), Color(.systemBackground)],
-                           startPoint: .top, endPoint: .bottom)
-            .allowsHitTesting(false)
-        }
         // Hidden while the drawer is up so its glow does not bleed through the glass.
         .opacity(showAdd || showCamera ? 0 : 1)
         .animation(.easeOut(duration: 0.15), value: showAdd)

@@ -5,7 +5,14 @@ enum AppTab: Hashable {
 }
 
 struct ContentView: View {
-    @State private var tab: AppTab = DebugFlags.startTab == "food" ? .food : .money
+    @State private var tab: AppTab = {
+        switch DebugFlags.startTab {
+        case "habits": return .habits
+        case "food": return .food
+        case "status": return .status
+        default: return .money
+        }
+    }()
 
     var body: some View {
         TabView(selection: $tab) {
@@ -31,8 +38,11 @@ struct Placeholder: View {
 
     var body: some View {
         NavigationStack {
-            ContentUnavailableView(title, systemImage: "tray", description: Text(detail))
-                .navigationTitle(title)
+            VStack(spacing: 0) {
+                ScreenHeader(title: title)
+                ContentUnavailableView(title, systemImage: "tray", description: Text(detail))
+            }
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }

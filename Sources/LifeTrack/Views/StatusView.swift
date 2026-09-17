@@ -6,22 +6,26 @@ struct StatusView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Database") {
-                    LabeledContent("SQLite", value: store.sqliteVersion.isEmpty ? "not open" : store.sqliteVersion)
-                    if let error = store.openError {
-                        LabeledContent("Error", value: error)
+            VStack(spacing: 0) {
+                ScreenHeader(title: "Status")
+                List {
+                    Section("Database") {
+                        LabeledContent("SQLite", value: store.sqliteVersion.isEmpty ? "not open" : store.sqliteVersion)
+                        if let error = store.openError {
+                            LabeledContent("Error", value: error)
+                        }
+                        Text(store.url.path)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
                     }
-                    Text(store.url.path)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                }
-                Section("Build") {
-                    LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
-                    LabeledContent("Bundle", value: Bundle.main.bundleIdentifier ?? "?")
+                    Section("Build") {
+                        LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
+                        LabeledContent("Bundle", value: Bundle.main.bundleIdentifier ?? "?")
+                    }
                 }
             }
-            .navigationTitle("Status")
+            .background(Color(.systemGroupedBackground))
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }

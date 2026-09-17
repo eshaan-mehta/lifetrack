@@ -57,12 +57,13 @@ final class SpeechRecognizer {
             state = .unavailable("Microphone access is turned off for LifeTrack.")
             return
         }
-        guard SpeechTranscriber.isAvailable else {
-            state = .failed("On-device transcription isn't available on this device.")
-            return
-        }
-        guard let locale = await Self.pickLocale() else {
-            state = .failed("Transcription isn't supported for your language yet.")
+        let locale: Locale
+        do {
+            // Usually instant: the model was downloaded in the background at first launch.
+            state = .preparing("Downloading the speech model…")
+            locale = try await SpeechModelInstaller.shared.ensureInstalled()
+        } catch {
+            state = .failed(error.localizedDescription)
             return
         }
 
@@ -72,13 +73,6 @@ final class SpeechRecognizer {
             reportingOptions: [.volatileResults],
             attributeOptions: []
         )
-
-        do {
-            try await ensureAssets(for: transcriber, locale: locale)
-        } catch {
-            state = .failed("Couldn't download the speech model. " + error.localizedDescription)
-            return
-        }
 
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
             state = .failed("No compatible audio format for transcription.")
@@ -126,31 +120,6 @@ final class SpeechRecognizer {
     }
 
     // MARK: Setup
-
-    private static func pickLocale() async -> Locale? {
-        if let match = await SpeechTranscriber.supportedLocale(equivalentTo: .current) {
-            return match
-        }
-        return await SpeechTranscriber.supportedLocale(equivalentTo: Locale(identifier: "en_US"))
-    }
-
-    private func ensureAssets(for transcriber: SpeechTranscriber, locale: Locale) async throws {
-        switch await AssetInventory.status(forModules: [transcriber]) {
-        case .installed:
-            return
-        case .unsupported:
-            throw NSError(domain: "LifeTrack", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "This language isn't supported."])
-        case .supported, .downloading:
-            state = .preparing("Downloading the speech model. This only happens once.")
-            _ = try? await AssetInventory.reserve(locale: locale)
-            if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-                try await request.downloadAndInstall()
-            }
-        @unknown default:
-            return
-        }
-    }
 
     private func startEngine(feeding continuation: AsyncStream<AnalyzerInput>.Continuation,
                              format: AVAudioFormat) throws {
