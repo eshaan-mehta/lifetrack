@@ -6,7 +6,8 @@ import Foundation
 ///   --tab=food        start on the Food tab
 ///   --demo-food       seed a few analyzed entries so the ring shows progress
 ///   --show=add        open the add drawer on launch
-///   --show=voice      open the drawer straight into voice capture
+///   --show=voice      same as add (the drawer opens listening)
+///   --show=camera     open the drawer in camera mode
 enum DebugFlags {
     private static let args = ProcessInfo.processInfo.arguments
 

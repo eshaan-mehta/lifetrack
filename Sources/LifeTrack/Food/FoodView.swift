@@ -5,9 +5,7 @@ struct FoodView: View {
     @AppStorage("dailyCalorieGoal") private var goal = 2000
 
     @State private var showAdd = false
-    @State private var showCamera = false
-    @State private var cameraRequested = false
-    @State private var initialMode: AddFoodSheet.Mode = .menu
+    @State private var initialMode: AddFoodSheet.Mode = .voice
 
     var body: some View {
         NavigationStack {
@@ -24,19 +22,12 @@ struct FoodView: View {
             .toolbar(.hidden, for: .navigationBar)
             // Inset rather than overlay so the list always scrolls clear of the button.
             .safeAreaInset(edge: .bottom, spacing: 0) { addBar }
-            .sheet(isPresented: $showAdd, onDismiss: presentCameraIfRequested) {
+            .sheet(isPresented: $showAdd) {
                 AddFoodSheet(
                     initialMode: initialMode,
                     onDescription: { log.add(.description($0)) },
-                    onCamera: {
-                        cameraRequested = true
-                        showAdd = false
-                    }
+                    onPhoto: { log.add(.photo($0)) }
                 )
-            }
-            .fullScreenCover(isPresented: $showCamera) {
-                PhotoCapture { log.add(.photo($0)) }
-                    .ignoresSafeArea()
             }
         }
         .onAppear(perform: applyDebugFlags)
@@ -60,7 +51,7 @@ struct FoodView: View {
 
     private var addButton: some View {
         Button {
-            initialMode = .menu
+            initialMode = .voice
             showAdd = true
         } label: {
             Image(systemName: "plus")
@@ -69,17 +60,11 @@ struct FoodView: View {
         }
         .buttonStyle(.glassProminent)
         .buttonBorderShape(.circle)
-        .tint(.green)
+        .tint(.primary)
         // Hidden while the drawer is up so its glow does not bleed through the glass.
-        .opacity(showAdd || showCamera ? 0 : 1)
+        .opacity(showAdd ? 0 : 1)
         .animation(.easeOut(duration: 0.15), value: showAdd)
         .accessibilityLabel("Add food")
-    }
-
-    private func presentCameraIfRequested() {
-        guard cameraRequested else { return }
-        cameraRequested = false
-        showCamera = true
     }
 
     /// Launch arguments used to screenshot specific states from the command line.
@@ -90,11 +75,11 @@ struct FoodView: View {
             log.add(.description("Oat milk latte"), calories: 190)
         }
         switch DebugFlags.show {
-        case "add":
-            initialMode = .menu
-            showAdd = true
-        case "voice":
+        case "add", "voice":
             initialMode = .voice
+            showAdd = true
+        case "camera":
+            initialMode = .camera
             showAdd = true
         default:
             break
@@ -168,9 +153,9 @@ private struct FoodRow: View {
         case .description:
             Image(systemName: "waveform")
                 .font(.headline)
-                .foregroundStyle(.green)
+                .foregroundStyle(.primary)
                 .frame(width: 44, height: 44)
-                .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
         }
     }
 }

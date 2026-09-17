@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// Listens as soon as it appears and shows the words live so they can be checked.
-/// The mic button pauses and resumes; Done hands the text back.
+/// Listening screen inside the drawer: prompt, live transcript, waveform, camera toggle.
+/// Starts listening as soon as it appears. Tapping the waveform pauses and resumes.
 struct VoiceCaptureView: View {
+    let recognizer: SpeechRecognizer
     let onDone: (String) -> Void
     let onCancel: () -> Void
+    let onCamera: () -> Void
 
-    @State private var recognizer = SpeechRecognizer()
     private var installer: SpeechModelInstaller { .shared }
 
     private var transcript: String {
@@ -14,7 +15,7 @@ struct VoiceCaptureView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             HStack {
                 Button("Cancel") {
                     recognizer.stop()
@@ -31,43 +32,69 @@ struct VoiceCaptureView: View {
                 .disabled(transcript.isEmpty)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
+            .padding(.top, 18)
+
+            Spacer(minLength: 10)
+
+            Text("What did you eat?")
+                .font(.title2.weight(.semibold))
 
             ScrollView {
-                Text(transcript.isEmpty ? "Say what you ate, like “two eggs and a slice of toast”." : transcript)
-                    .font(.title2)
+                Text(transcript.isEmpty ? placeholder : transcript)
+                    .font(.title3)
                     .foregroundStyle(transcript.isEmpty ? .secondary : .primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
                     .animation(.default, value: transcript)
             }
+            .frame(maxHeight: 96)
+            .padding(.top, 8)
+
+            Spacer(minLength: 6)
 
             if case .unavailable(let message) = recognizer.state {
                 Unavailable(message: message)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, 24)
+                    .frame(height: 104)
             } else {
-                VStack(spacing: 10) {
-                    Button {
-                        if recognizer.isListening {
-                            recognizer.stop()
-                        } else {
-                            Task { await recognizer.start() }
-                        }
-                    } label: {
-                        MicPulse(level: recognizer.level, active: recognizer.isListening)
+                Button {
+                    if recognizer.isListening {
+                        recognizer.stop()
+                    } else {
+                        Task { await recognizer.start() }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(recognizer.isListening ? "Pause listening" : "Start listening")
-
-                    Text(hint)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
+                } label: {
+                    Waveform(level: recognizer.level, active: recognizer.isListening)
+                        .frame(height: 72)
+                        .padding(.horizontal, 28)
                 }
-                .padding(.bottom, 16)
+                .buttonStyle(.plain)
+                .accessibilityLabel(recognizer.isListening ? "Pause listening" : "Start listening")
+
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                    .frame(minHeight: 32, alignment: .top)
             }
+
+            Spacer(minLength: 6)
+
+            Button(action: onCamera) {
+                HStack(spacing: 10) {
+                    Image(systemName: "camera")
+                    Text("Switch to camera")
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 14)
         }
         .task { await recognizer.start() }
         .onDisappear { recognizer.stop() }
@@ -85,7 +112,7 @@ struct VoiceCaptureView: View {
             }
         case .listening:
             HStack(spacing: 6) {
-                Circle().fill(.red).frame(width: 8, height: 8)
+                Circle().fill(.primary).frame(width: 8, height: 8)
                 Text("Listening").font(.subheadline.weight(.medium))
             }
         case .paused:
@@ -97,44 +124,28 @@ struct VoiceCaptureView: View {
         }
     }
 
-    private var hint: String {
+    private var placeholder: String {
         switch recognizer.state {
-        case .listening: return "Tap to pause"
+        case .listening: return "Listening…"
+        case .paused: return "Paused. Tap the wave to keep going."
         case .preparing(let message):
             if installer.status == .downloading {
                 return message + " " + installer.progress.formatted(.percent.precision(.fractionLength(0)))
             }
             return message
-        case .paused: return "Tap to keep going"
         case .failed(let message):
-            let sentence = message.hasSuffix(".") ? message : message + "."
-            return sentence + " Tap to try again."
-        default: return " "
+            return message.hasSuffix(".") ? message : message + "."
+        default: return "Starting…"
         }
     }
-}
 
-private struct MicPulse: View {
-    let level: Float
-    let active: Bool
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.green.opacity(0.15))
-                .scaleEffect(active ? 1 + CGFloat(level) * 0.9 : 1)
-                .animation(.easeOut(duration: 0.08), value: level)
-            Circle()
-                .fill(Color.green.opacity(0.25))
-                .scaleEffect(active ? 1 + CGFloat(level) * 0.5 : 1)
-                .animation(.easeOut(duration: 0.08), value: level)
-            Image(systemName: active ? "mic.fill" : "mic")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 64, height: 64)
-                .background(active ? Color.green.gradient : Color.gray.gradient, in: Circle())
+    private var caption: String {
+        switch recognizer.state {
+        case .listening: return "Tap to pause"
+        case .paused: return "Tap to continue"
+        case .failed: return "Tap to try again"
+        default: return " "
         }
-        .frame(width: 96, height: 96)
     }
 }
 

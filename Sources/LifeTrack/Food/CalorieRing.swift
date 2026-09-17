@@ -16,7 +16,7 @@ struct CalorieRing: View {
                 .stroke(Color.primary.opacity(0.08), style: StrokeStyle(lineWidth: 22, lineCap: .round))
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(ringStyle, style: StrokeStyle(lineWidth: 22, lineCap: .round))
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 22, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(duration: 0.6), value: progress)
             VStack(spacing: 4) {
@@ -28,19 +28,12 @@ struct CalorieRing: View {
                     .font(.headline)
                     .foregroundStyle(.secondary)
                 Text(overGoal ? "\(percent)% · over goal" : "\(percent)%")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(overGoal ? Color.orange : Color.secondary)
+                    .font(.subheadline.weight(overGoal ? .semibold : .medium))
+                    .foregroundStyle(overGoal ? Color.primary : Color.secondary)
             }
         }
         .padding(14)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(consumed) of \(goal) calories eaten today")
-    }
-
-    private var ringStyle: AnyShapeStyle {
-        if overGoal {
-            return AnyShapeStyle(Color.orange)
-        }
-        return AnyShapeStyle(AngularGradient(colors: [.green, .mint, .green], center: .center))
     }
 }

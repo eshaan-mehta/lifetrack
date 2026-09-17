@@ -1,90 +1,65 @@
 import SwiftUI
+import UIKit
 
-/// Bottom drawer: pick Describe or Photo. Describe expands the drawer into live transcription.
+/// Bottom drawer for logging food. Opens straight into listening. A wide toggle at the
+/// bottom switches to an in-drawer camera, and the camera's back button returns.
 struct AddFoodSheet: View {
-    enum Mode { case menu, voice }
+    enum Mode { case voice, camera }
 
     let onDescription: (String) -> Void
-    let onCamera: () -> Void
+    let onPhoto: (UIImage) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var mode: Mode
     @State private var detent: PresentationDetent
+    /// Lives here rather than in the voice view so the transcript survives a trip to the camera.
+    @State private var recognizer = SpeechRecognizer()
 
-    private static let menuDetent = PresentationDetent.height(290)
+    private static let voiceDetent = PresentationDetent.fraction(0.56)
+    private static let cameraDetent = PresentationDetent.fraction(0.8)
 
-    init(initialMode: Mode, onDescription: @escaping (String) -> Void, onCamera: @escaping () -> Void) {
+    init(initialMode: Mode = .voice,
+         onDescription: @escaping (String) -> Void,
+         onPhoto: @escaping (UIImage) -> Void) {
         self.onDescription = onDescription
-        self.onCamera = onCamera
+        self.onPhoto = onPhoto
         _mode = State(initialValue: initialMode)
-        _detent = State(initialValue: initialMode == .voice ? .medium : Self.menuDetent)
+        _detent = State(initialValue: initialMode == .camera ? Self.cameraDetent : Self.voiceDetent)
     }
 
     var body: some View {
         Group {
             switch mode {
-            case .menu:
-                menu
             case .voice:
                 VoiceCaptureView(
+                    recognizer: recognizer,
                     onDone: { text in
                         onDescription(text)
                         dismiss()
                     },
-                    onCancel: { dismiss() }
+                    onCancel: { dismiss() },
+                    onCamera: { switchTo(.camera) }
+                )
+            case .camera:
+                CameraView(
+                    onPhoto: { image in
+                        onPhoto(image)
+                        dismiss()
+                    },
+                    onBack: { switchTo(.voice) }
                 )
             }
         }
-        .presentationDetents([Self.menuDetent, .medium], selection: $detent)
+        .presentationDetents([Self.voiceDetent, Self.cameraDetent], selection: $detent)
         .presentationDragIndicator(.visible)
+        .tint(.primary)
     }
 
-    private var menu: some View {
-        VStack(spacing: 20) {
-            Text("What did you eat?")
-                .font(.title3.weight(.semibold))
-                .padding(.top, 28)
-            HStack(spacing: 16) {
-                OptionCard(icon: "mic.fill", title: "Describe it", subtitle: "Just say what you ate", tint: .green) {
-                    withAnimation(.snappy) {
-                        mode = .voice
-                        detent = .medium
-                    }
-                }
-                OptionCard(icon: "camera.fill", title: "Photo", subtitle: "Snap your plate", tint: .blue) {
-                    onCamera()
-                }
-            }
-            .padding(.horizontal, 20)
-            Spacer(minLength: 0)
+    private func switchTo(_ newMode: Mode) {
+        if newMode == .camera { recognizer.stop() }
+        withAnimation(.snappy) {
+            mode = newMode
+            detent = newMode == .camera ? Self.cameraDetent : Self.voiceDetent
         }
-    }
-}
-
-private struct OptionCard: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let tint: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 60, height: 60)
-                    .background(tint.gradient, in: Circle())
-                Text(title)
-                    .font(.headline)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 160)
-            .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 20))
-        }
-        .buttonStyle(.plain)
     }
 }

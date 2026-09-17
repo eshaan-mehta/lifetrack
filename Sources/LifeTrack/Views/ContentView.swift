@@ -29,6 +29,7 @@ struct ContentView: View {
                 StatusView()
             }
         }
+        .tint(.primary)
     }
 }
 
