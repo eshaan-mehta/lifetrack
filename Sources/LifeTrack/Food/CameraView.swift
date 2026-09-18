@@ -4,18 +4,19 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// Live camera inside the drawer. Preview fills the sheet; back to voice on the left,
-/// shutter in the middle, photo library on the right.
+/// Live camera inside the drawer. Preview fills the sheet. Cancel and the photo library sit
+/// on top; the shutter sits above the Voice / Camera pill along the bottom.
 struct CameraView: View {
     let onPhoto: (UIImage) -> Void
-    let onBack: () -> Void
+    let onVoice: () -> Void
+    let onCancel: () -> Void
 
     @State private var camera = CameraController()
     @State private var librarySelection: PhotosPickerItem?
     @State private var flash = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .top) {
             Color.black
             switch camera.status {
             case .running:
@@ -36,7 +37,11 @@ struct CameraView: View {
             if flash {
                 Color.white
             }
-            controls
+            VStack {
+                header
+                Spacer()
+                controls
+            }
         }
         .ignoresSafeArea()
         .task { await camera.start() }
@@ -44,10 +49,23 @@ struct CameraView: View {
         .onChange(of: librarySelection) { _, item in load(item) }
     }
 
-    private var controls: some View {
+    private var header: some View {
         HStack {
-            RoundGlyphButton(systemImage: "chevron.left", label: "Back to voice", onImagery: true, action: onBack)
+            Button("Cancel", action: onCancel)
+                .foregroundStyle(.white)
             Spacer()
+            PhotosPicker(selection: $librarySelection, matching: .images) {
+                RoundGlyph(systemImage: "photo.on.rectangle", onImagery: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Choose from library")
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+    }
+
+    private var controls: some View {
+        VStack(spacing: 14) {
             Button(action: shoot) {
                 ZStack {
                     Circle().stroke(.white, lineWidth: 4)
@@ -60,14 +78,12 @@ struct CameraView: View {
             .disabled(camera.status != .running)
             .opacity(camera.status == .running ? 1 : 0.35)
             .accessibilityLabel("Take photo")
-            Spacer()
-            PhotosPicker(selection: $librarySelection, matching: .images) {
-                RoundGlyph(systemImage: "photo.on.rectangle", onImagery: true)
+
+            ModePill(selected: .camera, onImagery: true) { mode in
+                if mode == .voice { onVoice() }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Choose from library")
+            .frame(height: DrawerControls.rowHeight)
         }
-        .frame(height: DrawerControls.rowHeight)
         .padding(.horizontal, DrawerControls.horizontalPadding)
         .padding(.bottom, DrawerControls.bottomPadding)
     }

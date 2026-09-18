@@ -23,8 +23,10 @@ Clean and minimalistic, in black and white.
   solid fill. Over the camera image it is a translucent dark disc with a white glyph so
   it stays legible. Camera controls and drawer actions (switch to camera, keep talking,
   send) all use it. They sit in a bottom row 28pt from the sides and 32pt above the
-  sheet's bottom edge, at a fixed row height, and keep the same slots in every drawer
-  state: the switch or library button bottom right, back or keep-talking bottom left.
+  sheet's bottom edge, at a fixed row height. Voice and camera are peers: the mic is
+  always bottom left and the camera always bottom right, with the active mode drawn
+  solid. Voice is the default. During review, send takes the camera's corner. In camera
+  mode the shutter sits between them and the photo library moves to the top right.
   No text labels on these buttons.
 - Transcribed text stays inline where it appeared while listening and simply becomes
   editable. No boxes or fields drawn around text.

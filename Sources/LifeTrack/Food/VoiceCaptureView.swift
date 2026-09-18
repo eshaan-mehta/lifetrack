@@ -146,18 +146,19 @@ struct VoiceCaptureView: View {
         }
     }
 
-    /// Same slots as the camera's controls: secondary action left, primary or switch right.
+    /// While listening, a Voice / Camera pill spans the row. In review the row becomes
+    /// keep-talking on the left and send on the right.
     private var bottomRow: some View {
         HStack {
             if reviewing {
                 RoundGlyphButton(systemImage: "mic.fill", label: "Keep talking", action: resume)
-            }
-            Spacer()
-            if reviewing {
+                Spacer()
                 RoundGlyphButton(systemImage: "arrow.up", label: "Send", prominent: true, action: send)
                     .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             } else {
-                RoundGlyphButton(systemImage: "camera", label: "Switch to camera", action: onCamera)
+                ModePill(selected: .voice) { mode in
+                    if mode == .camera { onCamera() }
+                }
             }
         }
         .frame(height: DrawerControls.rowHeight)
@@ -220,7 +221,9 @@ struct VoiceCaptureView: View {
 
     private func resume() {
         editorFocused = false
-        recognizer.replaceTranscript(draft.trimmingCharacters(in: .whitespacesAndNewlines))
+        if reviewing {
+            recognizer.replaceTranscript(draft.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
         Task { await recognizer.start() }
     }
 

@@ -46,7 +46,8 @@ struct AddFoodSheet: View {
                         onPhoto(image)
                         dismiss()
                     },
-                    onBack: { switchTo(.voice) }
+                    onVoice: { switchTo(.voice) },
+                    onCancel: { dismiss() }
                 )
             }
         }
