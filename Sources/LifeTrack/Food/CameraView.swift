@@ -7,21 +7,19 @@ import UIKit
 /// Live camera inside the drawer. Preview fills the sheet. Cancel and the photo library sit
 /// on top; the shutter sits above the Voice / Camera pill along the bottom.
 struct CameraView: View {
+    /// Owned by the drawer so the session is configured before this view ever appears.
+    let camera: CameraController
     let onPhoto: (UIImage) -> Void
     let onVoice: () -> Void
     let onCancel: () -> Void
 
-    @State private var camera = CameraController()
     @State private var librarySelection: PhotosPickerItem?
     @State private var flash = false
 
     var body: some View {
         ZStack(alignment: .top) {
             Color.black
-            switch camera.status {
-            case .running:
-                CameraPreview(session: camera.session)
-            case .unavailable(let message):
+            if case .unavailable(let message) = camera.status {
                 VStack(spacing: 10) {
                     Image(systemName: "camera.slash").font(.largeTitle)
                     Text(message)
@@ -30,9 +28,13 @@ struct CameraView: View {
                 .multilineTextAlignment(.center)
                 .padding(32)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .idle:
-                ProgressView().tint(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                // Attached before frames flow, so the first frame shows the moment it arrives.
+                CameraPreview(session: camera.session)
+                if camera.status == .idle {
+                    ProgressView().tint(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
             if flash {
                 Color.white
@@ -44,7 +46,7 @@ struct CameraView: View {
             }
         }
         .ignoresSafeArea()
-        .task { await camera.start() }
+        .task { await camera.resume() }   // no-op if the drawer already started it on the tap
         .onDisappear { camera.stop() }
         .onChange(of: librarySelection) { _, item in load(item) }
     }
@@ -124,48 +126,50 @@ final class CameraController {
     @ObservationIgnored private var configured = false
     @ObservationIgnored private var inFlight: PhotoDelegate?
 
-    func start() async {
-        guard AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) != nil else {
+    private var device: AVCaptureDevice? {
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    }
+
+    /// Configure the session without starting it. Cheap and silent (no camera indicator),
+    /// and it makes the later start fast. Does nothing until permission has been granted.
+    func prepare() async {
+        guard device != nil, AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
+        await configureIfNeeded()
+    }
+
+    /// Start frames flowing, asking for permission if that hasn't happened yet.
+    func resume() async {
+        guard device != nil else {
             status = .unavailable("No camera on this device. Pick a photo instead.")
             return
         }
-        guard await AVCaptureDevice.requestAccess(for: .video) else {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            break
+        case .notDetermined:
+            guard await AVCaptureDevice.requestAccess(for: .video) else {
+                status = .unavailable("Camera access is turned off for LifeTrack.")
+                return
+            }
+        default:
             status = .unavailable("Camera access is turned off for LifeTrack.")
             return
         }
+        await configureIfNeeded()
         let session = self.session
-        let output = self.output
-        let needsConfiguration = !configured
-        configured = true
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            queue.async {
-                if needsConfiguration {
-                    session.beginConfiguration()
-                    session.sessionPreset = .photo
-                    if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-                       let input = try? AVCaptureDeviceInput(device: device),
-                       session.canAddInput(input) {
-                        session.addInput(input)
-                    }
-                    if session.canAddOutput(output) {
-                        session.addOutput(output)
-                    }
-                    session.commitConfiguration()
-                }
-                if !session.isRunning {
-                    session.startRunning()
-                }
-                continuation.resume()
-            }
+        await onQueue {
+            if !session.isRunning { session.startRunning() }
         }
         status = session.isRunning ? .running : .unavailable("Couldn't start the camera.")
     }
 
+    /// Stop frames but keep the configuration, so the next start is just a start.
     func stop() {
         let session = self.session
         queue.async {
             if session.isRunning { session.stopRunning() }
         }
+        if status == .running { status = .idle }
     }
 
     func capture(_ completion: @escaping (UIImage) -> Void) {
@@ -181,6 +185,38 @@ final class CameraController {
         }
         inFlight = delegate
         output.capturePhoto(with: AVCapturePhotoSettings(), delegate: delegate)
+    }
+
+    private func configureIfNeeded() async {
+        guard !configured else { return }
+        configured = true
+        let session = self.session
+        let output = self.output
+        let device = self.device
+        await onQueue {
+            session.beginConfiguration()
+            session.sessionPreset = .photo
+            if let device,
+               let input = try? AVCaptureDeviceInput(device: device),
+               session.canAddInput(input) {
+                session.addInput(input)
+            }
+            if session.canAddOutput(output) {
+                session.addOutput(output)
+            }
+            session.commitConfiguration()
+        }
+    }
+
+    /// Runs work on the camera queue and returns when it has finished. The queue is serial,
+    /// so a start requested during configuration waits for the configuration.
+    private func onQueue(_ work: @escaping @Sendable () -> Void) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            queue.async {
+                work()
+                continuation.resume()
+            }
+        }
     }
 }
 

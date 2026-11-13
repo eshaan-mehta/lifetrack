@@ -49,6 +49,9 @@ final class SpeechRecognizer {
     private static let speechLevel: Float = 0.3
 
     @ObservationIgnored private let engine = AVAudioEngine()
+    /// Audio session activation and deactivation are slow and synchronous; keep them off the
+    /// main thread and in order.
+    @ObservationIgnored private let sessionQueue = DispatchQueue(label: "LifeTrack.audioSession")
     @ObservationIgnored private var run: Run?
     @ObservationIgnored private var resultsTask: Task<Void, Never>?
     @ObservationIgnored private var silenceTask: Task<Void, Never>?
@@ -171,9 +174,11 @@ final class SpeechRecognizer {
 
     private func startEngine(feeding continuation: AsyncStream<AnalyzerInput>.Continuation,
                              format: AVAudioFormat) throws {
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
+        try sessionQueue.sync {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        }
 
         let input = engine.inputNode
         let inputFormat = input.outputFormat(forBus: 0)
@@ -200,7 +205,9 @@ final class SpeechRecognizer {
             engine.inputNode.removeTap(onBus: 0)
             engine.stop()
         }
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        sessionQueue.async {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
         level = 0
     }
 

@@ -28,17 +28,27 @@ struct FoodEntry: Identifiable {
 final class FoodLog {
     private(set) var entries: [FoodEntry] = []
 
-    var todayEntries: [FoodEntry] {
+    func entries(on day: Date) -> [FoodEntry] {
         entries
-            .filter { Calendar.current.isDateInToday($0.date) }
+            .filter { Calendar.current.isDate($0.date, inSameDayAs: day) }
             .sorted { $0.date > $1.date }
     }
 
-    var caloriesToday: Int {
-        todayEntries.compactMap(\.calories).reduce(0, +)
+    func calories(on day: Date) -> Int {
+        entries(on: day).compactMap(\.calories).reduce(0, +)
     }
 
-    func add(_ source: FoodEntry.Source, calories: Int? = nil) {
-        entries.append(FoodEntry(date: Date(), source: source, calories: calories))
+    /// Logs to the given day. Today gets the real time; a past day gets now's time of day
+    /// placed on that date, so backfilled entries still sort sensibly.
+    func add(_ source: FoodEntry.Source, on day: Date = .now, calories: Int? = nil) {
+        entries.append(FoodEntry(date: Self.timestamp(on: day), source: source, calories: calories))
+    }
+
+    private static func timestamp(on day: Date) -> Date {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(day) { return .now }
+        let time = calendar.dateComponents([.hour, .minute, .second], from: .now)
+        return calendar.date(bySettingHour: time.hour ?? 12, minute: time.minute ?? 0,
+                             second: time.second ?? 0, of: day) ?? day
     }
 }

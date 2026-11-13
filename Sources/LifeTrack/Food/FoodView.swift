@@ -4,18 +4,25 @@ struct FoodView: View {
     @Environment(FoodLog.self) private var log
     @AppStorage("dailyCalorieGoal") private var goal = 2000
 
+    @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var showAdd = false
+    @State private var showCalendar = false
     @State private var initialMode: AddFoodSheet.Mode = .voice
+
+    private var isToday: Bool { Calendar.current.isDateInToday(day) }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    ScreenHeader(title: "Food")
-                    CalorieRing(consumed: log.caloriesToday, goal: goal)
+                    DayHeader(day: day, isToday: isToday,
+                              onPrevious: { shift(by: -1) },
+                              onNext: { shift(by: 1) },
+                              onPick: { showCalendar = true })
+                    CalorieRing(consumed: log.calories(on: day), goal: goal)
                         .frame(maxWidth: 300)
                         .frame(height: 300)
-                    TodayList(entries: log.todayEntries)
+                    DayList(title: listTitle, entries: log.entries(on: day), isToday: isToday)
                         .padding(.horizontal)
                 }
             }
@@ -25,13 +32,36 @@ struct FoodView: View {
             .sheet(isPresented: $showAdd) {
                 AddFoodSheet(
                     initialMode: initialMode,
-                    onDescription: { log.add(.description($0)) },
-                    onPhoto: { log.add(.photo($0)) }
+                    onDescription: { log.add(.description($0), on: day) },
+                    onPhoto: { log.add(.photo($0), on: day) }
                 )
+            }
+            .sheet(isPresented: $showCalendar) {
+                CalendarSheet(day: $day)
             }
         }
         .onAppear(perform: applyDebugFlags)
     }
+
+    private var listTitle: String {
+        if isToday { return "Today" }
+        if Calendar.current.isDateInYesterday(day) { return "Yesterday" }
+        return day.formatted(.dateTime.weekday(.wide))
+    }
+
+    // MARK: Day navigation
+
+    private func shift(by days: Int) {
+        guard let next = Calendar.current.date(byAdding: .day, value: days, to: day) else { return }
+        go(to: next)
+    }
+
+    private func go(to date: Date) {
+        let target = Calendar.current.startOfDay(for: min(date, .now))
+        withAnimation(.snappy) { day = target }
+    }
+
+    // MARK: Add button
 
     /// Bottom band: content fades out over the top strip, then the button sits on solid
     /// background so nothing shows behind it.
@@ -61,9 +91,9 @@ struct FoodView: View {
         .buttonStyle(.glassProminent)
         .buttonBorderShape(.circle)
         .tint(.primary)
-        // Hidden while the drawer is up so its glow does not bleed through the glass.
-        .opacity(showAdd ? 0 : 1)
-        .animation(.easeOut(duration: 0.15), value: showAdd)
+        // Hidden while a sheet is up so its glow does not bleed through the glass.
+        .opacity(showAdd || showCalendar ? 0 : 1)
+        .animation(.easeOut(duration: 0.15), value: showAdd || showCalendar)
         .accessibilityLabel("Add food")
     }
 
@@ -73,6 +103,14 @@ struct FoodView: View {
             log.add(.description("Oatmeal with blueberries and honey"), calories: 320)
             log.add(.description("Grilled chicken salad"), calories: 540)
             log.add(.description("Oat milk latte"), calories: 190)
+            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now)!
+            log.add(.description("Greek yogurt with granola"), on: yesterday, calories: 280)
+            log.add(.description("Burrito bowl"), on: yesterday, calories: 760)
+            log.add(.description("Pasta with tomato sauce"), on: yesterday, calories: 650)
+        }
+        if DebugFlags.dayOffset != 0,
+           let start = Calendar.current.date(byAdding: .day, value: DebugFlags.dayOffset, to: .now) {
+            day = Calendar.current.startOfDay(for: start)
         }
         switch DebugFlags.show {
         case "add", "voice":
@@ -81,21 +119,123 @@ struct FoodView: View {
         case "camera":
             initialMode = .camera
             showAdd = true
+        case "calendar":
+            showCalendar = true
         default:
             break
         }
     }
 }
 
-private struct TodayList: View {
+/// The date where the title used to be, with a small down chevron to say it opens the
+/// calendar, and the step arrows right beside it. Getting back to today lives in the
+/// calendar sheet.
+private struct DayHeader: View {
+    let day: Date
+    let isToday: Bool
+    let onPrevious: () -> Void
+    let onNext: () -> Void
+    let onPick: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: onPick) {
+                HStack(spacing: 6) {
+                    Text(day.formatted(.dateTime.month(.abbreviated).day().year()))
+                        .font(.title2.bold())
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .contentTransition(.numericText())
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 3)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(day.formatted(.dateTime.month(.wide).day().year()))
+            .accessibilityHint("Opens a calendar to pick a day")
+
+            HStack(spacing: 0) {
+                stepButton("chevron.left", label: "Previous day", action: onPrevious)
+                stepButton("chevron.right", label: "Next day", action: onNext)
+                    .disabled(isToday)
+                    .opacity(isToday ? 0.3 : 1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+        .animation(.snappy, value: isToday)
+    }
+
+    /// Bare glyph, no disc; the frame keeps a comfortable tap target.
+    private func stepButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+}
+
+/// Monthly calendar. Picking a day closes it; Today jumps back and closes it.
+private struct CalendarSheet: View {
+    @Binding var day: Date
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Button("Cancel") { dismiss() }
+                Spacer()
+                Text("Pick a day").font(.headline)
+                Spacer()
+                Button("Today") {
+                    day = Calendar.current.startOfDay(for: .now)
+                    dismiss()
+                }
+                .fontWeight(.semibold)
+                .disabled(Calendar.current.isDateInToday(day))
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+
+            DatePicker("Day", selection: $day, in: ...Date.now, displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .labelsHidden()
+                .padding(.horizontal, 12)
+                .onChange(of: day) { _, _ in dismiss() }
+
+            Spacer(minLength: 0)
+        }
+        .presentationDetents([.height(470)])
+        .presentationDragIndicator(.visible)
+        .tint(.primary)
+    }
+}
+
+private struct DayList: View {
+    let title: String
     let entries: [FoodEntry]
+    let isToday: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Today")
+            Text(title)
                 .font(.title3.weight(.semibold))
+                .contentTransition(.numericText())
             if entries.isEmpty {
-                Text("Nothing logged yet. Tap + and say what you ate or snap a photo.")
+                Text(isToday
+                     ? "Nothing logged yet. Tap + and say what you ate or snap a photo."
+                     : "Nothing logged on this day. Tap + to add something.")
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)

@@ -14,6 +14,9 @@ struct AddFoodSheet: View {
     @State private var detent: PresentationDetent
     /// Lives here rather than in the voice view so the transcript survives a trip to the camera.
     @State private var recognizer = SpeechRecognizer()
+    /// Lives here so the capture session is configured while you're still talking, and
+    /// started on the very tap that switches modes. Makes the camera feel already on.
+    @State private var camera = CameraController()
 
     private static let voiceDetent = PresentationDetent.fraction(0.56)
     private static let cameraDetent = PresentationDetent.fraction(0.8)
@@ -42,6 +45,7 @@ struct AddFoodSheet: View {
                 )
             case .camera:
                 CameraView(
+                    camera: camera,
                     onPhoto: { image in
                         onPhoto(image)
                         dismiss()
@@ -56,10 +60,16 @@ struct AddFoodSheet: View {
         .presentationDetents([detent], selection: $detent)
         .presentationDragIndicator(.visible)
         .tint(.primary)
+        .task { await camera.prepare() }
     }
 
     private func switchTo(_ newMode: Mode) {
-        if newMode == .camera { recognizer.stop() }
+        if newMode == .camera {
+            recognizer.stop()
+            Task { await camera.resume() }   // frames start arriving during the resize animation
+        } else {
+            camera.stop()
+        }
         withAnimation(.snappy) {
             mode = newMode
             detent = newMode == .camera ? Self.cameraDetent : Self.voiceDetent
